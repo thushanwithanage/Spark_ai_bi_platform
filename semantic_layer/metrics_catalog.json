@@ -1,0 +1,32 @@
+{
+  "metrics": [
+    {
+      "metric_name": "total_revenue",
+      "definition": "Total revenue generated from transactions",
+      "source_table": "gold.revenue_by_region",
+      "sql_logic": "SUM(total_revenue)",
+      "grain": "region_month"
+    },
+    {
+      "metric_name": "gross_profit",
+      "definition": "Revenue minus cost of goods sold",
+      "source_table": "gold.revenue_by_region",
+      "sql_logic": "SUM(gross_profit)",
+      "grain": "region_month"
+    },
+    {
+      "metric_name": "transactions",
+      "definition": "Total number of transactions",
+      "source_table": "gold.revenue_by_region",
+      "sql_logic": "SUM(total_transactions)",
+      "grain": "region_month"
+    },
+    {
+      "metric_name": "avg_order_value",
+      "definition": "Average revenue per order",
+      "source_table": "gold.customer_summary",
+      "sql_logic": "AVG(avg_order_value)",
+      "grain": "customer"
+    }
+  ]
+}

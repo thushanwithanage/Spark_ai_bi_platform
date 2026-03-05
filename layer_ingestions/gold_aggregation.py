@@ -21,6 +21,8 @@ revenue_by_region.write \
     .mode("overwrite") \
     .parquet("/workspace/spark_governed_ai_bi_platform/data/gold/revenue_by_region")
 
+revenue_by_region.createOrReplaceTempView("revenue_by_region")
+
 # Revenue by Channel & Month table
 revenue_by_channel = df.groupBy("channel", "year", "month") \
     .agg(
@@ -33,6 +35,8 @@ revenue_by_channel.write \
     .mode("overwrite") \
     .parquet("/workspace/spark_governed_ai_bi_platform/data/gold/revenue_by_channel")
 
+revenue_by_channel.createOrReplaceTempView("revenue_by_channel")
+
 # Customer Analytics table
 customer_summary = df.groupBy("customer_id") \
     .agg(
@@ -44,6 +48,8 @@ customer_summary = df.groupBy("customer_id") \
 customer_summary.write \
     .mode("overwrite") \
     .parquet("/workspace/spark_governed_ai_bi_platform/data/gold/customer_summary")
+
+customer_summary.createOrReplaceTempView("customer_summary")
 
 print("Gold layer created successfully")
 spark.stop()

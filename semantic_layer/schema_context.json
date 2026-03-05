@@ -1,0 +1,27 @@
+{
+  "tables": {
+    "revenue_by_region": [
+      "region",
+      "year",
+      "month",
+      "total_revenue",
+      "total_cogs",
+      "gross_profit",
+      "total_transactions"
+    ],
+    "revenue_by_channel": [
+      "channel",
+      "year",
+      "month",
+      "total_revenue",
+      "avg_unit_price",
+      "total_transactions"
+    ],
+    "customer_summary": [
+      "customer_id",
+      "total_orders",
+      "total_spent",
+      "avg_order_value"
+    ]
+  }
+}

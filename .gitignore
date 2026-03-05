@@ -1,3 +1,8 @@
 data/
 
 commands.py
+main.py
+
+ai_engine/__pycache__/
+
+.env
