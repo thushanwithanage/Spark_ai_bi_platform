@@ -19,7 +19,7 @@ def generate_sql(user_question):
         metrics = json.load(f)
     
     prompt = f"""
-    You are a data analyst generating Spark SQL.
+    Generate Spark SQL.
 
     Available tables:
     {schema}

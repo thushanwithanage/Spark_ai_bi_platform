@@ -4,5 +4,6 @@ commands.py
 main.py
 
 ai_engine/__pycache__/
+validation/__pycache__/
 
 .env
