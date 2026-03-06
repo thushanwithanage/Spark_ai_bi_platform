@@ -33,6 +33,7 @@ def generate_sql(user_question):
     - Only use listed columns
     - Do not use SELECT *
     - Output only SQL without SQL quotes
+    - Do not return schema names in the output
     """
 
     response = client.chat.completions.create(

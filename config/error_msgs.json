@@ -1,0 +1,10 @@
+{
+    "empty_query_error": "Empty query",
+    "invalid_ai_sql_error": "Invalid SQL in AI response",
+    "select_all_error":"SELECT * found in query",
+    "select_not_found_error":"Query not starting with SELECT clause",
+    "reserved_keywords_error": "Reserved keywords found in query",
+    "unbalanced_parentheses_error": "Unbalanced parentheses in query",
+    "multiple_statements_error": "Multiple SQL statements in query",
+    "valid_query": "Valid query"
+}

@@ -1,34 +1,42 @@
 import re
+import json
+import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_DIR = os.path.join(BASE_DIR, "..", "config")
+
+with open(os.path.join(CONFIG_DIR, "error_msgs.json"), "r") as f:
+    error_msgs = json.load(f)
+    
 def validate_query(query: str) -> tuple[bool, str]:
     if not query or not query.strip():
-        return False, "Empty query"
+        return False, error_msgs["empty_query_error"]
     
     query = query.strip()
 
     query = validate_sql(query)
     if not query:
-        return False, "Invalid SQL in AI response"
+        return False, error_msgs["invalid_ai_sql_error"]
     
     if not re.match(r'^\s*SELECT\b', query, re.IGNORECASE):
-        return False, "Query not starting with SELECT"
+        return False, error_msgs["select_not_found_error"]
     
     unacceptable_values = ["DROP", "DELETE", "ALTER", "TRUNCATE", "GRANT", "REVOKE", "CREATE", "USE", "EXECUTE", "MERGE", "CALL", "EXPLAIN"]
     
     if any(value in query.upper() for value in unacceptable_values):
-        return False, "Reserved keywords found in query"
+        return False, error_msgs["reserved_keywords_error"]
     
     if "SELECT *" in query.upper():
-        return False, "SELECT * found in query"
+        return False, error_msgs["select_all_error"]
 
     if query.count('(') != query.count(')'):
-        return False, "Unbalanced parentheses in query"
+        return False, error_msgs["unbalanced_parentheses_error"]
 
     clean = query.rstrip(';')
     if ';' in clean:
-        return False, "Multiple SQL statements in query"
+        return False, error_msgs["multiple_statements_error"]
     
-    return True, "Valid query"
+    return True, error_msgs["valid_query"]
 
 def validate_sql(text: str) -> str:
     fenced = re.search(r'```(?:sql)?\s*(.*?)```', text, re.DOTALL | re.IGNORECASE)
