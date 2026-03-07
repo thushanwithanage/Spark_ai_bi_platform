@@ -12,13 +12,13 @@ Traditional BI workflows require business users to depend on data teams to write
 
 This platform enables users to ask questions such as:
 
-Top 5 revenue generating regions in 2023
+> **Top 5 revenue generating regions in 2023**
 
 The system automatically:
 
-1.  Converts the question into SQL using an LLM\
-2.  Validates the generated SQL for safety and governance\
-3.  Executes the query in Spark\
+1.  Converts the question into SQL using an LLM
+2.  Validates the generated SQL for safety and governance
+3.  Executes the query in Spark
 4.  Returns the results to the user
 
 The architecture ensures that AI-generated queries remain **controlled, secure, and aligned with the data model**.
@@ -27,10 +27,21 @@ The architecture ensures that AI-generated queries remain **controlled, secure, 
 
 ## Architecture
 
-User Question │ ▼ Natural Language → SQL Engine │ ▼ SQL Validation Layer
-│ ▼ Spark Query Execution │ ▼ Results Returned to User
+    User Question
+          │
+          ▼
+    Natural Language → SQL Engine
+          │
+          ▼
+    SQL Validation Layer
+          │
+          ▼
+    Spark Query Execution
+          │
+          ▼
+    Results Returned to User
 
-Key design principles:
+### Key Design Principles
 
 -   Semantic layer driven analytics
 -   AI-assisted query generation
@@ -45,15 +56,23 @@ Key design principles:
 
 Users can query business datasets using plain English. The AI engine converts the question into Spark SQL using schema and metric context.
 
-Example:
+**Example**
 
 User question:
 
-Top 5 regions by revenue in 2023
+> Top 5 regions by revenue in 2023
 
 Generated SQL:
 
-SELECT region, SUM(total_revenue) AS revenue FROM revenue_by_region WHERE year = 2023 GROUP BY region ORDER BY revenue DESC LIMIT 5
+``` sql
+SELECT region,
+       SUM(total_revenue) AS revenue
+FROM revenue_by_region
+WHERE year = 2023
+GROUP BY region
+ORDER BY revenue DESC
+LIMIT 5;
+```
 
 ------------------------------------------------------------------------
 
@@ -61,9 +80,9 @@ SELECT region, SUM(total_revenue) AS revenue FROM revenue_by_region WHERE year =
 
 The platform uses a **semantic layer** to provide context to the AI model.
 
-Files:
-
-semantic_layer/ schema_context.json metrics_catalog.json
+    semantic_layer/
+     ├── schema_context.json
+     └── metrics_catalog.json
 
 This ensures the AI only uses:
 
@@ -77,12 +96,12 @@ This reduces hallucinated SQL and improves reliability.
 
 ### SQL Governance & Validation
 
-All AI generated SQL queries pass through a **validation layer** before execution.
+All AI-generated SQL queries pass through a **validation layer** before execution.
 
 The validator checks for:
 
--   destructive SQL operations (DROP, DELETE, etc.)
--   wildcard queries (SELECT \*)
+-   destructive SQL operations (`DROP`, `DELETE`, etc.)
+-   wildcard queries (`SELECT *`)
 -   multiple statements
 -   unbalanced SQL syntax
 -   invalid AI responses
@@ -97,7 +116,10 @@ Queries are executed using **Apache Spark**, enabling scalable analytics across 
 
 Gold-layer datasets are automatically registered as Spark temporary views:
 
-data/gold/ revenue_by_region revenue_by_channel customer_summary
+    data/gold/
+     ├── revenue_by_region
+     ├── revenue_by_channel
+     └── customer_summary
 
 The system dynamically loads these datasets into Spark for query execution.
 
@@ -110,7 +132,7 @@ The system dynamically loads these datasets into Spark for query execution.
   Data Processing   Apache Spark
   Programming       Python
   Query Language    SQL
-  AI Engine         LLM (OpenAI)
+  AI Engine         LLM (OpenAI-compatible API)
   Data Storage      Parquet
   Architecture      Medallion Data Model
 
@@ -118,17 +140,17 @@ The system dynamically loads these datasets into Spark for query execution.
 
 ## Example Workflow
 
-1️⃣ User submits a business question
+1.  User submits a business question
 
-Select top 5 rows by revenue in the EMEA region for the year 2023
+```{=html}
+<!-- -->
+```
+    Select top 5 rows by revenue in the EMEA region for the year 2023
 
-2️⃣ AI generates SQL
-
-3️⃣ SQL passes validation checks
-
-4️⃣ Query executes in Spark
-
-5️⃣ Results are returned to the user
+2.  AI generates SQL
+3.  SQL passes validation checks
+4.  Query executes in Spark
+5.  Results are returned to the user
 
 ------------------------------------------------------------------------
 
@@ -136,21 +158,28 @@ Select top 5 rows by revenue in the EMEA region for the year 2023
 
 ### 1. Install dependencies
 
+``` bash
 pip install pyspark openai
+```
 
 ### 2. Configure environment variables
 
-export API_KEY="your_api_key" 
-export BASE_URL="your_llm_endpoint" 
+``` bash
+export API_KEY="your_api_key"
+export BASE_URL="your_llm_endpoint"
 export MODEL="model_name"
+```
 
 ### 3. Run the application
 
+``` bash
 spark-submit main.py
+```
 
 ------------------------------------------------------------------------
 
 ## Author
 
-**Thushan Withanage**
+**Thushan Withanage**\
+
 Last Updated: 7th March 2026
