@@ -129,9 +129,7 @@ The system dynamically loads these datasets into Spark for query execution.
 
 1.  User submits a business question
 
-```{=html}
-```
-    Select top 5 rows by revenue in the EMEA region for the year 2023
+> Select top 5 rows by revenue in the EMEA region for the year 2023
 
 2.  AI generates SQL
 3.  SQL passes validation checks
