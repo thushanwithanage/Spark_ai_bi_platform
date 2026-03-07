@@ -125,25 +125,11 @@ The system dynamically loads these datasets into Spark for query execution.
 
 ------------------------------------------------------------------------
 
-## Technology Stack
-
-  Component         Technology
-  ----------------- -----------------------------
-  Data Processing   Apache Spark
-  Programming       Python
-  Query Language    SQL
-  AI Engine         LLM (OpenAI-compatible API)
-  Data Storage      Parquet
-  Architecture      Medallion Data Model
-
-------------------------------------------------------------------------
-
 ## Example Workflow
 
 1.  User submits a business question
 
 ```{=html}
-<!-- -->
 ```
     Select top 5 rows by revenue in the EMEA region for the year 2023
 
@@ -180,6 +166,6 @@ spark-submit main.py
 
 ## Author
 
-**Thushan Withanage**\
+**Thushan Withanage**
 
 Last Updated: 7th March 2026
