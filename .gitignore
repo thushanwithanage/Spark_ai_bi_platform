@@ -1,9 +1,9 @@
 data/
 
 commands.py
-main.py
 
 ai_engine/__pycache__/
+config/__pycache__/
 execution/__pycache__/
 validation/__pycache__/
 

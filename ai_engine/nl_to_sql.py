@@ -1,14 +1,12 @@
 import json
 import os
 from openai import OpenAI
+from config.file_path import SEMANTIC_LAYER_DIR
 
 client = OpenAI(
     api_key=os.getenv("API_KEY"),
     base_url=os.getenv("BASE_URL"),
 )
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SEMANTIC_LAYER_DIR = os.path.join(BASE_DIR, "..", "semantic_layer")
 
 def generate_sql(user_question):
     with open(os.path.join(SEMANTIC_LAYER_DIR, "schema_context.json")) as f:
