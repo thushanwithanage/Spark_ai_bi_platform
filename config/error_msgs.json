@@ -6,5 +6,7 @@
     "reserved_keywords_error": "Reserved keywords found in query",
     "unbalanced_parentheses_error": "Unbalanced parentheses in query",
     "multiple_statements_error": "Multiple SQL statements in query",
-    "valid_query": "Valid query"
+    "valid_query": "Valid query",
+     "table_not_defined_error": "Table not defined in schema context",
+     "column_not_defined_error": "Column not defined in schema context"
 }
