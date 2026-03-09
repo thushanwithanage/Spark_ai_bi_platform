@@ -2,12 +2,9 @@ import re
 import json
 import os
 import sqlglot
-from config.file_path import SEMANTIC_LAYER_DIR
+from config.file_path import SEMANTIC_LAYER_DIR, CONFIG_PATH
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_DIR = os.path.join(BASE_DIR, "..", "config")
-
-with open(os.path.join(CONFIG_DIR, "error_msgs.json"), "r") as f:
+with open(os.path.join(CONFIG_PATH, "error_msgs.json"), "r") as f:
     error_msgs = json.load(f)
     
 def validate_query(query: str) -> tuple[bool, str]:

@@ -1,9 +1,8 @@
-from pyspark.sql import SparkSession
 import os
+from pyspark.sql import SparkSession
+from config.file_path import DATA_PATH
 
 spark = SparkSession.builder.appName("AI Query Engine").getOrCreate()
-
-DATA_PATH = "/workspace/spark_governed_ai_bi_platform/data/gold"
 
 def load_tables():
     loaded = []
