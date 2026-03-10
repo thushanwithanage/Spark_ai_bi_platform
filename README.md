@@ -41,12 +41,52 @@ The architecture ensures that AI-generated queries remain **controlled, secure, 
           ▼
     Results Returned to User
 
+------------------------------------------------------------------------
+
 ### Key Design Principles
 
 -   Semantic layer driven analytics
 -   AI-assisted query generation
 -   Governed SQL validation
 -   Distributed query execution using Spark
+
+------------------------------------------------------------------------
+
+## AI Query Validation Pipeline
+
+AI-generated SQL queries pass through a multi-stage validation pipeline before execution.  
+This architecture ensures that natural language queries remain **safe, governed, and cost-efficient** when executed in the Spark environment.
+
+The pipeline performs the following validation steps:
+
+1. **SQL Extraction**
+   - Extracts valid SQL statements from the LLM response.
+   - Removes markdown formatting or explanatory text.
+
+2. **Syntax Parsing**
+   - SQL queries are parsed using `sqlglot` to ensure valid SQL syntax.
+   - Prevents execution of malformed queries.
+
+3. **Semantic Layer Validation**
+   - Ensures the query only references **approved tables and columns** defined in the semantic layer.
+   - Prevents hallucinated tables or metrics from the AI model.
+
+4. **Security Validation**
+   - Blocks destructive SQL operations such as:
+     - `DROP`
+     - `DELETE`
+     - `UPDATE`
+   - Ensures queries remain read-only.
+
+5. **Query Cost Protection**
+   - Enforces safeguards to prevent expensive queries:
+     - Maximum JOIN count
+     - Mandatory `LIMIT`
+     - Maximum result size (`LIMIT ≤ 100`)
+     - Optional `WHERE` filter requirement
+
+6. **Execution Approval**
+   - Only queries that pass all validation checks are submitted to Spark for execution.
 
 ------------------------------------------------------------------------
 
@@ -110,6 +150,21 @@ This prevents unsafe or expensive queries from running in the Spark environment.
 
 ------------------------------------------------------------------------
 
+### Query Cost Protection
+
+To prevent expensive or inefficient queries from overloading the compute engine, the platform implements **query cost protection guardrails**.
+
+These safeguards ensure that AI-generated queries remain efficient and suitable for interactive analytics workloads.
+
+The validation layer enforces several rules before a query can execute:
+
+- **Maximum JOIN limit** – prevents excessive joins that can trigger large distributed shuffles.
+- **Mandatory result limit** – all queries must include a `LIMIT` clause.
+- **Maximum result size (`LIMIT ≤ 100`)** – prevents extremely large result sets.
+- **Optional filter requirement (`WHERE` clause)** – helps avoid full table scans.
+
+------------------------------------------------------------------------
+
 ### Distributed Query Execution
 
 Queries are executed using **Apache Spark**, enabling scalable analytics across large datasets.
@@ -166,4 +221,4 @@ spark-submit main.py
 
 **Thushan Withanage**
 
-Last Updated: 7th March 2026
+Last Updated: 10th March 2026

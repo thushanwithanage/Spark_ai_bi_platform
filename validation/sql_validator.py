@@ -2,6 +2,7 @@ import re
 import json
 import os
 import sqlglot
+from sqlglot import exp
 from config.file_path import SEMANTIC_LAYER_DIR, CONFIG_PATH
 
 with open(os.path.join(CONFIG_PATH, "error_msgs.json"), "r") as f:
@@ -35,10 +36,24 @@ def validate_query(query: str) -> tuple[bool, str]:
     if ';' in rstrip_query:
         return False, error_msgs["multiple_statements_error"]
     
-    is_valid, message = validate_tables_and_columns(rstrip_query)
+    parsed_query = sqlglot.parse_one(rstrip_query)
+    is_valid_schema, message = validate_table_and_column_names(parsed_query)
 
-    return is_valid, message
+    if not is_valid_schema:
+        return False, message
+    
+    is_valid_limit, message = validate_limit(parsed_query)
+    if not is_valid_limit:
+        return False, message
+    
+    is_valid_join_count, message = validate_join_count(parsed_query) 
+    if not is_valid_join_count:
+        return False, message
+    
+    is_valid_filter, message = validate_filter(parsed_query)
+    return is_valid_filter, message
 
+# Extract SQL query to return from first SELECT block
 def extract_sql_query(text: str) -> str:
     fenced = re.search(r'```(?:sql)?\s*(.*?)```', text, re.DOTALL | re.IGNORECASE)
     if fenced:
@@ -51,14 +66,13 @@ def extract_sql_query(text: str) -> str:
 
     return ""
 
-def validate_tables_and_columns(query: str) -> tuple[bool, str]:
+# Validate table and column names
+def validate_table_and_column_names(parsed_query: sqlglot.exp.Query) -> tuple[bool, str]:
     with open(os.path.join(SEMANTIC_LAYER_DIR, "schema_context.json")) as f:
         schema = json.load(f)
 
-    parsed = sqlglot.parse_one(query)
-
-    tables = {t.name for t in parsed.find_all(sqlglot.exp.Table)}
-    columns = {c.name for c in parsed.find_all(sqlglot.exp.Column)}
+    tables = {t.name for t in parsed_query.find_all(sqlglot.exp.Table)}
+    columns = {c.name for c in parsed_query.find_all(sqlglot.exp.Column)}
 
     defined_tables = set(schema["tables"].keys())
     
@@ -73,5 +87,41 @@ def validate_tables_and_columns(query: str) -> tuple[bool, str]:
     invalid_columns = columns - defined_columns
     if invalid_columns:
         return False, error_msgs["column_not_defined_error"]
+
+    return True, error_msgs["valid_query"]
+
+# Validate query limit
+def validate_limit(parsed_query: sqlglot.exp.Query) -> tuple[bool, str]:
+    MAX_LIMIT = 100
+
+    limit = parsed_query.args.get("limit")
+
+    if not limit:
+        return False, error_msgs["limit_not_found_error"]
+
+    limit_value = int(limit.expression.name)
+
+    if limit_value > MAX_LIMIT:
+        return False, error_msgs["query_limit_exceeded_error"]+ str(MAX_LIMIT)
+
+    return True, error_msgs["valid_query"]
+
+# Validate JOIN count
+def validate_join_count(parsed_query: sqlglot.exp.Query) -> tuple[bool, str]:
+    MAX_JOINS = 3
+
+    joins = list(parsed_query.find_all(sqlglot.exp.Join))
+
+    if len(joins) > MAX_JOINS:
+        return False, error_msgs["join_count_exceeded_error"] + str(MAX_JOINS)
+
+    return True, error_msgs["valid_query"]
+
+# Validate WHERE clause
+def validate_filter(parsed_query: str) -> tuple[bool, str]:
+    where = parsed_query.args.get("where")
+
+    if not where:
+        return False, error_msgs["where_clause_error"]
 
     return True, error_msgs["valid_query"]
