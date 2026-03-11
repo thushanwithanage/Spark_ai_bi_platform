@@ -1,5 +1,7 @@
 data/
 
+logs/
+
 commands.py
 
 ai_engine/__pycache__/

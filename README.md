@@ -83,9 +83,13 @@ The pipeline performs the following validation steps:
      - Maximum JOIN count
      - Mandatory `LIMIT`
      - Maximum result size (`LIMIT ≤ 100`)
-     - Optional `WHERE` filter requirement
+     - `WHERE` filter requirement
 
-6. **Execution Approval**
+6. **Query Logging**
+   - Logs each query execution with a unique `query_id`, timestamp, user question, generated SQL, validation status, and execution time.
+   - Enables monitoring, auditing, and debugging of AI-generated queries.
+
+7. **Execution Approval**
    - Only queries that pass all validation checks are submitted to Spark for execution.
 
 ------------------------------------------------------------------------
@@ -161,7 +165,24 @@ The validation layer enforces several rules before a query can execute:
 - **Maximum JOIN limit** – prevents excessive joins that can trigger large distributed shuffles.
 - **Mandatory result limit** – all queries must include a `LIMIT` clause.
 - **Maximum result size (`LIMIT ≤ 100`)** – prevents extremely large result sets.
-- **Optional filter requirement (`WHERE` clause)** – helps avoid full table scans.
+- **Filter requirement (`WHERE` clause)** – helps avoid full table scans.
+
+------------------------------------------------------------------------
+
+### Query Logging
+
+All executed queries are automatically logged for **observability, auditing, and debugging**.
+
+Each query execution generates a structured log entry containing:
+- unique query identifier (`query_id`)
+- timestamp
+- original user question
+- generated SQL query
+- execution status
+- query execution time
+- validation error message (if any)
+
+Logs are stored as **daily log files** to keep log sizes manageable and simplify monitoring.
 
 ------------------------------------------------------------------------
 
@@ -221,4 +242,4 @@ spark-submit main.py
 
 **Thushan Withanage**
 
-Last Updated: 10th March 2026
+Last Updated: 11th March 2026
