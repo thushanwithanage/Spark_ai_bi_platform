@@ -2,6 +2,7 @@ import json
 import os
 from openai import OpenAI
 from config.file_path import SEMANTIC_LAYER_DIR
+from prompts.sql_generation_prompt import build_sql_generation_prompt
 
 client = OpenAI(
     api_key=os.getenv("API_KEY"),
@@ -14,25 +15,7 @@ def generate_sql(user_question):
     with open(os.path.join(SEMANTIC_LAYER_DIR, "metrics_catalog.json")) as f:
         metrics = json.load(f)
     
-    prompt = f"""
-    Generate Spark SQL.
-
-    Available tables:
-    {schema}
-
-    Available metrics:
-    {metrics}
-
-    User Question:
-    {user_question}
-
-    Rules:
-    - Only use listed tables
-    - Only use listed columns
-    - Do not use SELECT *
-    - Output only SQL without SQL quotes
-    - Do not return schema names in the output
-    """
+    prompt = build_sql_generation_prompt(schema, metrics, user_question)
 
     response = client.chat.completions.create(
         model=os.getenv("MODEL"),
