@@ -1,0 +1,12 @@
+def build_sql_correction_prompt(sql_query, error_message):
+    return f"""
+        The SQL query generated previously is invalid.
+
+        SQL:
+        {sql_query}
+
+        Validation Error:
+        {error_message}
+
+        Please correct the SQL query and return only the valid SQL statement.
+        """

@@ -7,10 +7,10 @@
     "unbalanced_parentheses_error": "Unbalanced parentheses in query",
     "multiple_statements_error": "Multiple SQL statements in query",
     "valid_query": "Valid query",
-     "table_not_defined_error": "Table not defined in schema context",
-     "column_not_defined_error": "Column not defined in schema context",
-     "limit_not_found_error": "LIMIT clause not defined in query",
-     "query_limit_exceeded_error": "Query exceeds maximum allowed length",
-     "where_clause_error": "WHERE clause missing in query",
-     "join_count_exceeded_error": "Query exceeds maximum allowed number of JOINs"
+    "table_not_defined_error": "Table not defined in schema context",
+    "column_not_defined_error": "Column not defined in schema context",
+    "limit_not_found_error": "LIMIT clause not defined in query",
+    "query_limit_exceeded_error": "Query exceeds maximum allowed length",
+    "where_clause_error": "Query must prevent full table scans",
+    "join_count_exceeded_error": "Query exceeds maximum allowed number of JOINs"
 }

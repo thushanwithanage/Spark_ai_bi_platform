@@ -7,6 +7,7 @@ commands.py
 ai_engine/__pycache__/
 config/__pycache__/
 execution/__pycache__/
+prompts/__pycache__/
 validation/__pycache__/
 
 .env

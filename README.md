@@ -1,6 +1,6 @@
 # Governed AI Self-Service BI Platform
 
-An AI-powered self-service Business Intelligence platform that enables users to query curated business datasets using natural language. The system converts user questions into validated Spark SQL queries and executes them securely against governed analytics datasets.
+An AI-powered Business Intelligence platform that enables users to query curated business datasets using natural language. The system converts user questions into validated Spark SQL queries and executes them securely against governed analytics datasets.
 
 This project demonstrates how modern analytics platforms combine **AI, data governance, and distributed data processing** to enable safe and scalable self-service analytics.
 
@@ -35,11 +35,18 @@ The architecture ensures that AI-generated queries remain **controlled, secure, 
           ▼
     SQL Validation Layer
           │
-          ▼
-    Spark Query Execution
+          ├── Valid → Execute in Spark
           │
-          ▼
-    Results Returned to User
+          └── Invalid
+                │
+                ▼
+         AI Query Correction
+                │
+                ▼
+            Re-validation
+                │
+                ▼
+         Results Returned to User
 
 ------------------------------------------------------------------------
 
@@ -54,43 +61,62 @@ The architecture ensures that AI-generated queries remain **controlled, secure, 
 
 ## AI Query Validation Pipeline
 
-AI-generated SQL queries pass through a multi-stage validation pipeline before execution.  
+AI-generated SQL queries pass through a multi-stage validation pipeline before execution.
 This architecture ensures that natural language queries remain **safe, governed, and cost-efficient** when executed in the Spark environment.
 
 The pipeline performs the following validation steps:
 
-1. **SQL Extraction**
-   - Extracts valid SQL statements from the LLM response.
-   - Removes markdown formatting or explanatory text.
+1.  **SQL Extraction**
 
-2. **Syntax Parsing**
-   - SQL queries are parsed using `sqlglot` to ensure valid SQL syntax.
-   - Prevents execution of malformed queries.
+    -   Extracts valid SQL statements from the LLM response.
+    -   Removes markdown formatting or explanatory text.
 
-3. **Semantic Layer Validation**
-   - Ensures the query only references **approved tables and columns** defined in the semantic layer.
-   - Prevents hallucinated tables or metrics from the AI model.
+2.  **Syntax Parsing**
 
-4. **Security Validation**
-   - Blocks destructive SQL operations such as:
-     - `DROP`
-     - `DELETE`
-     - `UPDATE`
-   - Ensures queries remain read-only.
+    -   SQL queries are parsed using `sqlglot` to ensure valid SQL syntax.
+    -   Prevents execution of malformed queries.
 
-5. **Query Cost Protection**
-   - Enforces safeguards to prevent expensive queries:
-     - Maximum JOIN count
-     - Mandatory `LIMIT`
-     - Maximum result size (`LIMIT ≤ 100`)
-     - `WHERE` filter requirement
+3.  **Semantic Layer Validation**
 
-6. **Query Logging**
-   - Logs each query execution with a unique `query_id`, timestamp, user question, generated SQL, validation status, and execution time.
-   - Enables monitoring, auditing, and debugging of AI-generated queries.
+    -   Ensures the query only references **approved tables and columns** defined in the semantic layer.
+    -   Prevents hallucinated tables or metrics from the AI model.
 
-7. **Execution Approval**
-   - Only queries that pass all validation checks are submitted to Spark for execution.
+4.  **Security Validation**
+
+    -   Blocks destructive SQL operations such as:
+        -   `DROP`
+        -   `DELETE`
+        -   `UPDATE`
+    -   Ensures queries remain read-only.
+
+5.  **Query Cost Protection**
+
+    -   Enforces safeguards to prevent expensive queries:
+        -   Maximum JOIN count
+        -   Mandatory `LIMIT`
+        -   Maximum result size (`LIMIT ≤ 100`)
+        -   `WHERE` filter requirement
+
+6.  **Query Logging**
+
+    -   Logs each query execution with a unique `query_id`, timestamp, user question, generated SQL, validation status, and execution time.
+    -   Enables monitoring, auditing, and debugging of AI-generated queries.
+
+7.  **AI Query Correction Loop**
+
+    -   AI models may occasionally generate SQL that fails validation due to syntax errors, missing clauses, or invalid table references.
+    -   Instead of immediately failing the request, the system sends the generated SQL and validation error message back to the AI model to produce a corrected query.
+
+    Example validation error:
+
+    > Unbalanced parentheses
+
+    -   The corrected SQL is then re-validated before execution.
+    -   A retry limit is enforced to prevent infinite correction loops.
+
+8.  **Execution Approval**
+
+    -   Only queries that pass all validation checks are submitted to Spark for execution.
 
 ------------------------------------------------------------------------
 
@@ -162,10 +188,10 @@ These safeguards ensure that AI-generated queries remain efficient and suitable 
 
 The validation layer enforces several rules before a query can execute:
 
-- **Maximum JOIN limit** – prevents excessive joins that can trigger large distributed shuffles.
-- **Mandatory result limit** – all queries must include a `LIMIT` clause.
-- **Maximum result size (`LIMIT ≤ 100`)** – prevents extremely large result sets.
-- **Filter requirement (`WHERE` clause)** – helps avoid full table scans.
+-   **Maximum JOIN limit** -- prevents excessive joins that can trigger large distributed shuffles.
+-   **Mandatory result limit** -- all queries must include a `LIMIT` clause.
+-   **Maximum result size (`LIMIT ≤ 100`)** -- prevents extremely large result sets.
+-   **Filter requirement (`WHERE` clause)** -- helps avoid full table scans.
 
 ------------------------------------------------------------------------
 
@@ -174,13 +200,14 @@ The validation layer enforces several rules before a query can execute:
 All executed queries are automatically logged for **observability, auditing, and debugging**.
 
 Each query execution generates a structured log entry containing:
-- unique query identifier (`query_id`)
-- timestamp
-- original user question
-- generated SQL query
-- execution status
-- query execution time
-- validation error message (if any)
+
+-   unique query identifier (`query_id`)
+-   timestamp
+-   original user question
+-   generated SQL query
+-   execution status
+-   query execution time
+-   validation error message (if any)
 
 Logs are stored as **daily log files** to keep log sizes manageable and simplify monitoring.
 
@@ -242,4 +269,4 @@ spark-submit main.py
 
 **Thushan Withanage**
 
-Last Updated: 11th March 2026
+Last Updated: 13th March 2026
