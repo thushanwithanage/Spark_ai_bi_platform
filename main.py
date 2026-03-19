@@ -5,21 +5,23 @@ from config.query_logger import log_query
 from prompts.sql_correction_prompt import build_sql_correction_prompt
 import time
 
-user_question = "Top 5 regions by revenue in 2023"
+user_question = "Top 5 records in EMEA region by revenue in 2023"
 max_retries = 2
 i = 0
+ai_error = False
+
+sql_query = generate_sql(user_question)
 
 while i < max_retries:
-
-    if i == 0:
-        sql_query = generate_sql(user_question)
-    else:
+    print(sql_query)
+    if i > 0 and ai_error:
         correction_prompt = build_sql_correction_prompt(sql_query, message)
         sql_query = generate_sql(correction_prompt)
-
-    print(sql_query)
-
-    is_valid, message = validate_query(sql_query)
+    elif i > 0 and not ai_error:
+        break
+    
+    is_valid, ai_error, message = validate_query(sql_query)
+    print(f"ai error : {ai_error}")
 
     if is_valid:
         start_time = time.time()

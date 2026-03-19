@@ -8,50 +8,50 @@ from config.file_path import SEMANTIC_LAYER_DIR, CONFIG_PATH
 with open(os.path.join(CONFIG_PATH, "error_msgs.json"), "r") as f:
     error_msgs = json.load(f)
     
-def validate_query(query: str) -> tuple[bool, str]:
+def validate_query(query: str) -> tuple[bool, bool, str]:
     if not query or not query.strip():
-        return False, error_msgs["empty_query_error"]
+        return False, True, error_msgs["empty_query_error"]
     
     query = query.strip()
 
     query = extract_sql_query(query)
     if not query:
-        return False, error_msgs["invalid_ai_sql_error"]
+        return False, True, error_msgs["invalid_ai_sql_error"]
     
     if not re.match(r'^\s*SELECT\b', query, re.IGNORECASE):
-        return False, error_msgs["select_not_found_error"]
+        return False, True, error_msgs["select_not_found_error"]
     
     reserved_keywords = ["DROP", "DELETE", "ALTER", "TRUNCATE", "GRANT", "REVOKE", "CREATE", "USE", "EXECUTE", "MERGE", "CALL", "EXPLAIN"]
     
     if any(value in query.upper() for value in reserved_keywords):
-        return False, error_msgs["reserved_keywords_error"]
+        return False, True, error_msgs["reserved_keywords_error"]
     
     if "SELECT *" in query.upper():
-        return False, error_msgs["select_all_error"]
+        return False, True, error_msgs["select_all_error"]
 
     if query.count('(') != query.count(')'):
-        return False, error_msgs["unbalanced_parentheses_error"]
+        return False, True, error_msgs["unbalanced_parentheses_error"]
 
     rstrip_query = query.rstrip(';')
     if ';' in rstrip_query:
-        return False, error_msgs["multiple_statements_error"]
+        return False, True, error_msgs["multiple_statements_error"]
     
     parsed_query = sqlglot.parse_one(rstrip_query)
     is_valid_schema, message = validate_table_and_column_names(parsed_query)
 
     if not is_valid_schema:
-        return False, message
+        return False, True, message
     
     is_valid_limit, message = validate_limit(parsed_query)
     if not is_valid_limit:
-        return False, message
+        return False, False, message
     
     is_valid_join_count, message = validate_join_count(parsed_query) 
     if not is_valid_join_count:
-        return False, message
+        return False, False, message
     
     is_valid_filter, message = validate_filter(parsed_query)
-    return is_valid_filter, message
+    return is_valid_filter, False, message
 
 # Extract SQL query to return from first SELECT block
 def extract_sql_query(text: str) -> str:
