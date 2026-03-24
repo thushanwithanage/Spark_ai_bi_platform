@@ -9,8 +9,11 @@
     "valid_query": "Valid query",
     "table_not_defined_error": "Table not defined in schema context",
     "column_not_defined_error": "Column not defined in schema context",
+    "tables_and_columns_defined_msg":"Tables and columns are available in the schema",
     "limit_not_found_error": "LIMIT clause not defined in query",
     "query_limit_exceeded_error": "Query exceeds maximum allowed length",
     "where_clause_error": "Query must prevent full table scans",
-    "join_count_exceeded_error": "Query exceeds maximum allowed number of JOINs"
+    "join_count_exceeded_error": "Query exceeds maximum allowed number of JOINs",
+    "table_permission_error":"No permission to view table data",
+    "column_permission_error":"No permission to view column data"
 }

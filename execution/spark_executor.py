@@ -20,7 +20,6 @@ def load_tables():
         except Exception as e:
             failed.append((table_name, str(e)))
 
-    print(f"Loaded tables: {loaded}")
     if failed:
         print(f"Failed to load: {failed}")
 
