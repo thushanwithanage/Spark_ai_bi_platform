@@ -45,7 +45,7 @@ def extract_columns_with_tables(sql: str | sqlglot.exp.Expression) -> list[dict]
 
 def validate_columns_and_tables(columns_list : list[dict]) -> tuple[bool, str]:
     for item in columns_list:
-        if item["table"] != "<subquery:sub>":
+        if "subquery" in item["table"]:
             if item["table"] in schema["tables"].keys():
                 if item["column"] not in schema["tables"].get(item["table"]):
                     return False, error_msgs["column_not_defined_error"]

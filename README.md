@@ -2,9 +2,9 @@
 
 An AI-powered Business Intelligence platform that enables users to query curated business datasets using natural language. The system converts user questions into validated Spark SQL queries and executes them securely against governed analytics datasets.
 
-This project demonstrates how modern analytics platforms combine **AI, data governance, and distributed data processing** to enable safe and scalable self-service analytics.
+This project demonstrates the way modern analytics platforms combine **AI, data governance, RBAC, and distributed data processing** to enable safe and scalable self-service analytics.
 
-------------------------------------------------------------------------
+---
 
 ## Project Overview
 
@@ -16,242 +16,180 @@ This platform enables users to ask questions such as:
 
 The system automatically:
 
-1.  Converts the question into SQL using an LLM
-2.  Validates the generated SQL for safety and governance
-3.  Executes the query in Spark
-4.  Returns the results to the user
+1. Converts the question into SQL using an LLM
+2. Validates the generated SQL for safety, governance, and RBAC permissions
+3. Optimizes the SQL query for performance and efficiency
+4. Executes the query in Spark
+5. Returns the results to the user
 
-The architecture ensures that AI-generated queries remain **controlled, secure, and aligned with the data model**.
+The architecture ensures that AI-generated queries remain **controlled, secure, optimized, and aligned with the data model and user permissions**.
 
-------------------------------------------------------------------------
+---
 
 ## Architecture
 
-    User Question
-          │
-          ▼
-    Natural Language → SQL Engine
-          │
-          ▼
-    SQL Validation Layer
-          │
-          ├── Valid → Execute in Spark
-          │
-          └── Invalid
-                │
-                ▼
-         AI Query Correction
-                │
-                ▼
-            Re-validation
-                │
-                ▼
-         Results Returned to User
+```
+User Question
+      │
+      ▼
+Natural Language → SQL Engine
+      │
+      ▼
+SQL Validation & Optimization Layer
+      │
+      ├── Valid → Execute in Spark with RBAC enforcement
+      │
+      └── Invalid
+            │
+            ▼
+     AI Query Correction
+            │
+            ▼
+        Re-validation
+            │
+            ▼
+     Results Returned to User
+```
 
-------------------------------------------------------------------------
+---
 
 ### Key Design Principles
 
--   Semantic layer driven analytics
--   AI-assisted query generation
--   Governed SQL validation
--   Distributed query execution using Spark
+* Semantic layer driven analytics
+* AI-assisted query generation
+* Governed SQL validation
+* SQL query optimization
+* Role-Based Access Control (RBAC) enforcement
+* Distributed query execution using Spark
 
-------------------------------------------------------------------------
+---
 
-## AI Query Validation Pipeline
+## AI Query Validation & Optimization Pipeline
 
-AI-generated SQL queries pass through a multi-stage validation pipeline before execution.
-This architecture ensures that natural language queries remain **safe, governed, and cost-efficient** when executed in the Spark environment.
+AI-generated SQL queries pass through a multi-stage validation and optimization pipeline before execution. This architecture ensures that natural language queries remain **safe, governed, RBAC-compliant, optimized, and cost-efficient**.
 
-The pipeline performs the following validation steps:
+The pipeline performs the following validation and optimization steps:
 
-1.  **SQL Extraction**
+1. **SQL Extraction**
 
-    -   Extracts valid SQL statements from the LLM response.
-    -   Removes markdown formatting or explanatory text.
+   * Extracts valid SQL statements from the LLM response.
+   * Removes markdown formatting or explanatory text.
 
-2.  **Syntax Parsing**
+2. **Syntax Parsing**
 
-    -   SQL queries are parsed using `sqlglot` to ensure valid SQL syntax.
-    -   Prevents execution of malformed queries.
+   * SQL queries are parsed using `sqlglot` to ensure valid SQL syntax.
+   * Prevents execution of malformed queries.
 
-3.  **Semantic Layer Validation**
+3. **Semantic Layer Validation**
 
-    -   Ensures the query only references **approved tables and columns** defined in the semantic layer.
-    -   Prevents hallucinated tables or metrics from the AI model.
+   * Ensures the query only references **approved tables and columns** defined in the semantic layer.
 
-4.  **Security Validation**
+4. **Security Validation**
 
-    -   Blocks destructive SQL operations such as:
-        -   `DROP`
-        -   `DELETE`
-        -   `UPDATE`
-    -   Ensures queries remain read-only.
+   * Blocks destructive SQL operations such as `DROP`, `DELETE`, `UPDATE`.
 
-5.  **Query Cost Protection**
+5. **RBAC Enforcement**
 
-    -   Enforces safeguards to prevent expensive queries:
-        -   Maximum JOIN count
-        -   Mandatory `LIMIT`
-        -   Maximum result size (`LIMIT ≤ 100`)
-        -   `WHERE` filter requirement
+   * Verifies that the user is authorized to access the requested tables and columns.
+   * Ensures sensitive datasets are protected according to organizational roles.
 
-6.  **Query Logging**
+6. **Query Cost Protection**
 
-    -   Logs each query execution with a unique `query_id`, timestamp, user question, generated SQL, validation status, and execution time.
-    -   Enables monitoring, auditing, and debugging of AI-generated queries.
+   * Enforces safeguards to prevent expensive queries: maximum JOIN count, mandatory `LIMIT`, maximum result size (`LIMIT ≤ 100`), `WHERE` filter requirement.
 
-7.  **AI Query Correction Loop**
+7. **Query Optimization Layer**
 
-    -   AI models may occasionally generate SQL that fails validation due to syntax errors, missing clauses, or invalid table references.
-    -   Instead of immediately failing the request, the system sends the generated SQL and validation error message back to the AI model to produce a corrected query.
+   * Applies rule-based SQL optimizations using `sqlglot` to improve query performance before execution.
+   * Optimizations include:
+     * **Predicate Pushdown** – Moves filters closer to data sources to reduce data scanned.
+     * **Subquery Detection** – Identifies presence of nested queries.
+     * **Unused Column Pruning in Subqueries** – Removes unnecessary columns from subqueries to reduce data processing overhead.
+     * **Subquery Rewriting** – Updates and merges optimized subqueries back into the main query.
 
-    Example validation error:
+   These optimizations ensure queries are **efficient, scalable, and cost-effective** when executed in Spark.
 
-    > Unbalanced parentheses
+8. **Query Logging**
 
-    -   The corrected SQL is then re-validated before execution.
-    -   A retry limit is enforced to prevent infinite correction loops.
+   * Logs each query execution with a unique `query_id`, timestamp, user question, generated SQL, validation status, execution time, and RBAC check result.
 
-8.  **Execution Approval**
+9. **AI Query Correction Loop**
 
-    -   Only queries that pass all validation checks are submitted to Spark for execution.
+   * Failed validations due to syntax errors, missing clauses, invalid tables are sent back to the AI for correction.
+   * Re-validated before execution with a retry limit.
 
-------------------------------------------------------------------------
+10. **Execution Approval**
+
+   * Only queries passing all validations, optimizations, and RBAC checks are executed in Spark.
+
+---
 
 ## Key Features
 
 ### Natural Language to SQL
 
-Users can query business datasets using plain English. The AI engine converts the question into Spark SQL using schema and metric context.
-
-**Example**
-
-User question:
-
-> Top 5 regions by revenue in 2023
-
-Generated SQL:
-
-``` sql
-SELECT region,
-       SUM(total_revenue) AS revenue
-FROM revenue_by_region
-WHERE year = 2023
-GROUP BY region
-ORDER BY revenue DESC
-LIMIT 5;
-```
-
-------------------------------------------------------------------------
+Users can query business datasets using plain English. The AI engine converts the question into Spark SQL using schema, metric context, and user permissions.
 
 ### Semantic Data Layer
 
-The platform uses a **semantic layer** to provide context to the AI model.
+The platform uses a **semantic layer** to provide context and restrict access.
 
-    semantic_layer/
-     ├── schema_context.json
-     └── metrics_catalog.json
+```
+semantic_layer/
+ ├── schema_context.json
+ └── metrics_catalog.json
+```
 
-This ensures the AI only uses:
+Ensures the AI only uses approved tables, columns, and defined metrics.
 
--   approved tables
--   approved columns
--   defined metrics
+### SQL Governance, RBAC & Validation
 
-This reduces hallucinated SQL and improves reliability.
+All AI-generated SQL queries pass through a **validation and optimization layer** that enforces:
 
-------------------------------------------------------------------------
+* Destructive SQL checks (`DROP`, `DELETE`, etc.)
+* Wildcard and multi-statement checks
+* RBAC enforcement
+* Query cost protection
+* Query optimization
+* Logging and auditing
 
-### SQL Governance & Validation
+### SQL Query Optimization Engine
 
-All AI-generated SQL queries pass through a **validation layer** before execution.
+The platform includes a rule-based SQL optimization engine powered by `sqlglot`, enabling automatic improvements to AI-generated queries before execution.
 
-The validator checks for:
+Key capabilities:
 
--   destructive SQL operations (`DROP`, `DELETE`, etc.)
--   wildcard queries (`SELECT *`)
--   multiple statements
--   unbalanced SQL syntax
--   invalid AI responses
+* Predicate pushdown for reducing data scans
+* Detection of subqueries in complex SQL
+* Removal of unused columns from subqueries
+* Safe rewriting and merging of optimized subqueries
 
-This prevents unsafe or expensive queries from running in the Spark environment.
-
-------------------------------------------------------------------------
-
-### Query Cost Protection
-
-To prevent expensive or inefficient queries from overloading the compute engine, the platform implements **query cost protection guardrails**.
-
-These safeguards ensure that AI-generated queries remain efficient and suitable for interactive analytics workloads.
-
-The validation layer enforces several rules before a query can execute:
-
--   **Maximum JOIN limit** -- prevents excessive joins that can trigger large distributed shuffles.
--   **Mandatory result limit** -- all queries must include a `LIMIT` clause.
--   **Maximum result size (`LIMIT ≤ 100`)** -- prevents extremely large result sets.
--   **Filter requirement (`WHERE` clause)** -- helps avoid full table scans.
-
-------------------------------------------------------------------------
-
-### Query Logging
-
-All executed queries are automatically logged for **observability, auditing, and debugging**.
-
-Each query execution generates a structured log entry containing:
-
--   unique query identifier (`query_id`)
--   timestamp
--   original user question
--   generated SQL query
--   execution status
--   query execution time
--   validation error message (if any)
-
-Logs are stored as **daily log files** to keep log sizes manageable and simplify monitoring.
-
-------------------------------------------------------------------------
+This ensures that generated queries are not only valid and secure, but also **performance optimized for distributed execution in Spark**.
 
 ### Distributed Query Execution
 
-Queries are executed using **Apache Spark**, enabling scalable analytics across large datasets.
+Queries are executed using **Apache Spark**, enabling scalable analytics across large datasets. Gold layer datasets are automatically registered as Spark temporary views.
 
-Gold-layer datasets are automatically registered as Spark temporary views:
+### Example Workflow
 
-    data/gold/
-     ├── revenue_by_region
-     ├── revenue_by_channel
-     └── customer_summary
+1. User submits a business question
+2. AI generates SQL
+3. SQL passes validation, optimization, and RBAC checks
+4. Query executes in Spark
+5. Results are returned to the user
 
-The system dynamically loads these datasets into Spark for query execution.
-
-------------------------------------------------------------------------
-
-## Example Workflow
-
-1.  User submits a business question
-
-> Select top 5 rows by revenue in the EMEA region for the year 2023
-
-2.  AI generates SQL
-3.  SQL passes validation checks
-4.  Query executes in Spark
-5.  Results are returned to the user
-
-------------------------------------------------------------------------
+---
 
 ## Running the Project
 
 ### 1. Install dependencies
 
-``` bash
+```bash
 pip install pyspark openai
 ```
 
 ### 2. Configure environment variables
 
-``` bash
+```bash
 export API_KEY="your_api_key"
 export BASE_URL="your_llm_endpoint"
 export MODEL="model_name"
@@ -259,14 +197,14 @@ export MODEL="model_name"
 
 ### 3. Run the application
 
-``` bash
+```bash
 spark-submit main.py
 ```
 
-------------------------------------------------------------------------
+---
 
 ## Author
 
 **Thushan Withanage**
 
-Last Updated: 24th March 2026
+Last Updated: 31st March 2026
