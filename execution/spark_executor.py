@@ -1,10 +1,14 @@
 import os
+import streamlit as st
 from pyspark.sql import SparkSession
 from config.file_path import DATA_PATH
 
-spark = SparkSession.builder.appName("AI Query Engine").getOrCreate()
-
-def load_tables():
+@st.cache_resource(show_spinner="Initializing Spark Engine...")
+def get_spark_session():
+    os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-17-openjdk-amd64"
+    
+    spark = SparkSession.builder.getOrCreate()
+    
     loaded = []
     failed = []
 
@@ -22,9 +26,10 @@ def load_tables():
 
     if failed:
         print(f"Failed to load: {failed}")
+        
+    return spark
 
 def execute_sql(query):
+    spark = get_spark_session()
     df = spark.sql(query)
     return df
-
-load_tables()

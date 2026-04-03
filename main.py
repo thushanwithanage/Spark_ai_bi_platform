@@ -1,3 +1,5 @@
+import time
+
 from ai_engine.nl_to_sql import generate_sql
 from validation.sql_validator import validate_query
 from validation.rbac_validator import validate_rbac
@@ -6,8 +8,13 @@ from config.query_logger import log_query
 from prompts.sql_correction_prompt import build_sql_correction_prompt
 from validation.tables_and_columns_validator import extract_columns_with_tables
 from optimization.predicate_pushdown_optimizer import apply_predicate_pushdown
-from optimization.sub_query_optimizer import contains_subquery, find_unused_subquery_columns,remove_unused_subquery_columns, replace_subquery_in_query, remove_unused_joins
-import time
+from optimization.sub_query_optimizer import (
+    contains_subquery,
+    find_unused_subquery_columns,
+    remove_unused_subquery_columns,
+    replace_subquery_in_query,
+    remove_unused_joins
+)
 
 user_question = "Top 5 records by revenue in EMEA region"
 max_retries = 2
