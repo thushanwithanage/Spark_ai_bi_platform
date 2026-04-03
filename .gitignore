@@ -1,11 +1,10 @@
+.env
+
 data/
 
 logs/
 
 commands.py
+test.py
 
 **/__pycache__/
-
-.env
-
-test.py

@@ -1,5 +1,6 @@
 import sqlglot
 from sqlglot import parse_one, exp
+from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from typing import Set
 
 def contains_subquery(sql: str):
@@ -64,7 +65,7 @@ def find_unused_subquery_columns(sql: str, dialect: str = 'spark') -> Set[str]:
 
     return subquery, subquery_cols, outer_refs, clause_cols
 
-def prune_subquery_columns(subquery_node, columns_to_remove):
+def remove_unused_subquery_columns(subquery_node, columns_to_remove):
     if isinstance(subquery_node, str):
         expression = parse_one(subquery_node)
     else:
@@ -108,3 +109,6 @@ def replace_subquery_in_query(original_sql: str, updated_subquery_node, dialect:
     original_subquery.replace(updated_subquery_node)
 
     return outer_ast.sql()
+
+def remove_unused_joins(sql: str):
+    return eliminate_joins(parse_one(sql))

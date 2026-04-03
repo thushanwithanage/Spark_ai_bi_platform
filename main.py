@@ -6,8 +6,7 @@ from config.query_logger import log_query
 from prompts.sql_correction_prompt import build_sql_correction_prompt
 from validation.tables_and_columns_validator import extract_columns_with_tables
 from optimization.predicate_pushdown_optimizer import apply_predicate_pushdown
-from optimization.sub_query_optimizer import contains_subquery, find_unused_subquery_columns
-from optimization.sub_query_optimizer import prune_subquery_columns, replace_subquery_in_query
+from optimization.sub_query_optimizer import contains_subquery, find_unused_subquery_columns,remove_unused_subquery_columns, replace_subquery_in_query, remove_unused_joins
 import time
 
 user_question = "Top 5 records by revenue in EMEA region"
@@ -28,8 +27,9 @@ sql_query = apply_predicate_pushdown(sql_query)
 
 if contains_subquery(sql_query):
     sub_query, subquery_cols, outer_refs, clause_cols = find_unused_subquery_columns(sql_query)
-    sub_query = prune_subquery_columns(sub_query, subquery_cols-outer_refs)
+    sub_query = remove_unused_subquery_columns(sub_query, subquery_cols-outer_refs)
     sql_query = replace_subquery_in_query(sql_query, sub_query)
+    sql_query = remove_unused_joins(sql_query)
 
 # Extract query columns list
 columns_list = extract_columns_with_tables(sql_query)
