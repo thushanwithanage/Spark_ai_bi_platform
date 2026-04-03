@@ -133,7 +133,7 @@ Key optimizations:
 
 ---
 
-## ▶️ How to Run
+## How to Run
 
 ### 1. Install dependencies
 ```bash
@@ -161,5 +161,5 @@ Top 5 revenue generating regions
 
 ---
 
-## 👤 Author
+## Author
 Thushan Withanage
