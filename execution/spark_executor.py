@@ -5,10 +5,16 @@ from config.file_path import DATA_PATH
 
 @st.cache_resource(show_spinner="Initializing Spark Engine...")
 def get_spark_session():
-    os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-17-openjdk-amd64"
-    
-    spark = SparkSession.builder.getOrCreate()
-    
+    try:
+        os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-17-openjdk-amd64"
+    except EnvironmentError as e:
+        raise EnvironmentError(f"Environmental variables not set {e}")
+
+    try:    
+        spark = SparkSession.builder.getOrCreate()
+    except Exception as e:
+        raise Exception(f"Failed to initialize Spark session {e}")
+     
     loaded = []
     failed = []
 
@@ -31,5 +37,12 @@ def get_spark_session():
 
 def execute_sql(query):
     spark = get_spark_session()
-    df = spark.sql(query)
-    return df
+
+    if spark is None:
+        return None
+    
+    try:
+        df = spark.sql(query)
+        return df
+    except Exception:
+        return None

@@ -20,78 +20,92 @@ user_question = "Top 5 records by revenue in EMEA region"
 max_retries = 2
 i = 0
 ai_error = False
+message = ""
 
-user_context = {
-    "user_id": "u123",
-    "role": "analyst"
-}
+user_context = {"user_id": "u123", "role": "analyst"}
 
-# Generate SQL
-sql_query = generate_sql(user_question)
+try:
+    # Generate SQL
+    try:
+        sql_query = generate_sql(user_question)
+    except Exception as e:
+        raise RuntimeError(f"SQL generation failed: {e}")
 
-# Optimize SQL
-sql_query = apply_predicate_pushdown(sql_query)
+    # Optimize SQL
+    try:
+        sql_query = apply_predicate_pushdown(sql_query)
+    except Exception:
+        pass
 
-if contains_subquery(sql_query):
-    sub_query, subquery_cols, outer_refs, clause_cols = find_unused_subquery_columns(sql_query)
-    sub_query = remove_unused_subquery_columns(sub_query, subquery_cols-outer_refs)
-    sql_query = replace_subquery_in_query(sql_query, sub_query)
-    sql_query = remove_unused_joins(sql_query)
+    try:
+        if contains_subquery(sql_query):
+            subquery_cols, outer_refs = find_unused_subquery_columns(sql_query)
+            sub_query = remove_unused_subquery_columns(sql_query, subquery_cols - outer_refs)
+            sql_query = replace_subquery_in_query(sql_query, sub_query)
+            sql_query = remove_unused_joins(sql_query)
+    except Exception:
+        pass
 
-# Extract query columns list
-columns_list = extract_columns_with_tables(sql_query)
+    # Extract query columns list
+    try:
+        columns_list = extract_columns_with_tables(sql_query)
+    except Exception:
+        columns_list = []
 
-# RBAC check
-rbac_status, error_msg = validate_rbac(columns_list, user_context["role"])
-rbac_status, error_msg = True, ""
+    # RBAC check
+    try:
+        rbac_status, error_msg = validate_rbac(columns_list, user_context["role"])
+    except Exception as e:
+        rbac_status, error_msg = False, f"RBAC check failed: {e}"
 
-if rbac_status is not False:
-    while i < max_retries:
-        if i > 0 and ai_error:
-            correction_prompt = build_sql_correction_prompt(user_question, sql_query, message)
-            sql_query = generate_sql(correction_prompt)
-        elif i > 0 and not ai_error:
-            log_query(
-                question=user_question,
-                sql=sql_query,
-                status="failed",
-                message=message
-            )
-            print(f"Please update the question to fix the error. {message}")
-            break
-        
-        # Validate query
-        is_valid, ai_error, message = validate_query(sql_query)
+    if rbac_status:
+        while i < max_retries:
+            if i > 0:
+                if ai_error:
+                    try:
+                        correction_prompt = build_sql_correction_prompt(user_question, sql_query, message)
+                        sql_query = generate_sql(correction_prompt)
+                    except Exception:
+                        print("SQL correction failed, using last query")
+                else:
+                    log_query(question=user_question, sql=sql_query, status="failed", message=message)
+                    print(f"Please update the question to fix the error: {message}")
+                    break
 
-        if is_valid:
-            start_time = time.time()
+            # Validate query
+            try:
+                is_valid, ai_error, message = validate_query(sql_query)
+            except Exception:
+                is_valid, ai_error, message = False, True, "SQL validation failed"
 
-            # Execute query
-            df = execute_sql(sql_query)
+            if is_valid:
+                try:
+                    start_time = time.time()
+                    df = execute_sql(sql_query)
+                    end_time = time.time()
+                    execution_time = round(end_time - start_time, 2)
 
-            end_time = time.time()
-            execution_time = round(end_time - start_time, 2)
+                    df.show(5)
 
-            df.show(5)
+                    log_query(
+                        question=user_question,
+                        sql=sql_query,
+                        status="success",
+                        execution_time=execution_time
+                    )
+                    break
+                except Exception as e:
+                    print(f"Query execution failed: {e}")
+                    log_query(question=user_question, sql=sql_query, status="failed", message=str(e))
+                    break
+            else:
+                log_query(question=user_question, sql=sql_query, status="failed", message=message)
+                i += 1
 
-            log_query(
-                question=user_question,
-                sql=sql_query,
-                status="success",
-                execution_time=execution_time
-            )
-            break
+        if i == max_retries:
+            print(f"Error: {message}")
+    else:
+        print(f"Permission error on data: {error_msg}")
 
-        else:
-            log_query(
-                question=user_question,
-                sql=sql_query,
-                status="failed",
-                message=message
-            )
-
-            i += 1
-    if i == max_retries:
-        print(f"Error : {message}")
-else:
-    print(f"Permission error on data. {error_msg}")
+except Exception as e:
+    print(f"Processing failed: {e}")

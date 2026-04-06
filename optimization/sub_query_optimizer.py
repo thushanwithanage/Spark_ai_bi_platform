@@ -1,114 +1,168 @@
 import sqlglot
 from sqlglot import parse_one, exp
 from sqlglot.optimizer.eliminate_joins import eliminate_joins
-from typing import Set
+from typing import Set, Tuple, Iterable, Union
 
-def contains_subquery(sql: str):
-    ast = sqlglot.parse_one(sql)
-
-    subquery = ast.find(exp.Subquery)
-    if not subquery:
-        return False
-    else:
-        return True
+def contains_subquery(sql: str) -> bool:
+    if not isinstance(sql, str):
+        raise ValueError("Invalid SQL input")
+    try:
+        ast = sqlglot.parse_one(sql)
+    except Exception as e:
+        raise ValueError(f"SQL parsing failed {e}")
+    try:
+        subquery = ast.find(exp.Subquery)
+        if not subquery:
+            return False
+        else:
+            return True
     
-def find_unused_subquery_columns(sql: str, dialect: str = 'spark') -> Set[str]:
-    ast = sqlglot.parse_one(sql, dialect=dialect)
+    except Exception:
+        return ast
 
-    subquery = ast.find(exp.Subquery)
-    if not subquery:
-        return set()
+def find_unused_subquery_columns(sql: str) -> Tuple[Set[str], Set[str]]:
+    if not isinstance(sql, str) or not sql.strip():
+        raise ValueError("Invalid SQL input")
 
-    inner_select = subquery.find(exp.Select)
-    if not inner_select:
-        return set()
+    try:
+        ast = sqlglot.parse_one(sql)
+    except Exception as e:
+        raise ValueError(f"SQL parsing failed: {str(e)}")
 
-    # Retrieve subquery columns 
-    subquery_cols: Set[str] = set()
-    for expr in inner_select.expressions:
-        if isinstance(expr, exp.Alias):
-            subquery_cols.add(expr.alias.lower())
-        elif isinstance(expr, exp.Column):
-            subquery_cols.add(expr.name.lower())
-        elif isinstance(expr, exp.Star):
-            return set()
+    try:
+        subquery = ast.find(exp.Subquery)
+        if not subquery:
+            return set(), set()
 
-    # Retrieve subquery clauses
-    clause_cols: dict = {
-        "where":    set(),
-        "group_by": set(),
-        "having":   set(),
-        "order_by": set(),
-    }
+        inner_select = subquery.find(exp.Select)
+        if not inner_select:
+            return set(), set()
 
-    clause_map = {
-        "where":    exp.Where,
-        "group_by": exp.Group,
-        "having":   exp.Having,
-        "order_by": exp.Order,
-    }
+        # Retrieve subquery columns
+        subquery_cols: Set[str] = set()
+        for expr in inner_select.expressions:
+            try:
+                if isinstance(expr, exp.Alias):
+                    subquery_cols.add(expr.alias.lower())
+                elif isinstance(expr, exp.Column):
+                    subquery_cols.add(expr.name.lower())
+                elif isinstance(expr, exp.Star):
+                    return set(), set()
+            except Exception:
+                continue
 
-    for clause_name, clause_type in clause_map.items():
-        clause_node = inner_select.find(clause_type)
-        if clause_node:
-            clause_cols[clause_name].add(str(clause_node))
+        inner_node_ids = {id(node) for node in inner_select.walk()}
 
-    inner_node_ids = {id(node) for node in inner_select.walk()}
+        # Retrieve outer query columns
+        outer_refs: Set[str] = set()
+        for node in ast.walk():
+            try:
+                if id(node) in inner_node_ids:
+                    continue
+                if isinstance(node, exp.Column):
+                    outer_refs.add(node.name.lower())
+            except Exception:
+                continue
 
-    # Retrieve outer query columns
-    outer_refs: Set[str] = set()
-    for node in ast.walk():
-        if id(node) in inner_node_ids:
-            continue
-        if isinstance(node, exp.Column):
-            outer_refs.add(node.name.lower())
+        return subquery_cols, outer_refs
 
-    return subquery, subquery_cols, outer_refs, clause_cols
+    except Exception as e:
+        return set(), set()
 
-def remove_unused_subquery_columns(subquery_node, columns_to_remove):
-    if isinstance(subquery_node, str):
-        expression = parse_one(subquery_node)
-    else:
-        expression = subquery_node
+def remove_unused_subquery_columns(subquery_node: Union[str, exp.Expression],columns_to_remove: Iterable[str]) -> str:
 
-    select = expression.find(exp.Select)
-    if not select:
+    if not columns_to_remove:
+        return subquery_node if isinstance(subquery_node, str) else subquery_node.sql()
+
+    try:
+        columns_to_remove = {
+            str(c).lower() for c in columns_to_remove if c is not None
+        }
+    except Exception:
+        raise ValueError("Invalid columns to remove input")
+
+    try:
+        expression = (
+            parse_one(subquery_node)
+            if isinstance(subquery_node, str)
+            else subquery_node
+        )
+    except Exception as e:
+        raise ValueError(f"SQL parsing failed: {str(e)}")
+
+    try:
+        select = expression.find(exp.Select)
+        if not select:
+            return expression.sql()
+
+        new_expressions = []
+
+        for proj in select.expressions:
+            try:
+                name = None
+
+                if isinstance(proj, exp.Alias) and proj.alias:
+                    name = proj.alias.lower()
+                elif isinstance(proj, exp.Column) and proj.name:
+                    name = proj.name.lower()
+
+                if name and name in columns_to_remove:
+                    continue
+
+                new_expressions.append(proj)
+
+            except Exception:
+                new_expressions.append(proj)
+
+        if not new_expressions:
+            return expression.sql()
+
+        select.set("expressions", new_expressions)
+
         return expression.sql()
 
-    columns_to_remove = {c.lower() for c in columns_to_remove}
+    except Exception:
+        return expression.sql()
 
-    new_expressions = []
-    for proj in select.expressions:
-        name = None
+def replace_subquery_in_query(original_sql: str, updated_subquery_node: Union[str, exp.Expression]) -> str:
+    if not original_sql or not isinstance(original_sql, str):
+        raise ValueError("Invalid sql input")
 
-        if isinstance(proj, exp.Alias):
-            name = proj.alias.lower()
-        elif isinstance(proj, exp.Column):
-            name = proj.name.lower()
-        else:
-            name = None
+    try:
+        outer_ast = parse_one(original_sql)
+    except Exception:
+        return original_sql
 
-        if name is not None and name in columns_to_remove:
-            continue
+    try:
+        original_subquery = outer_ast.find(exp.Subquery)
+        if not original_subquery:
+            return outer_ast.sql()
 
-        new_expressions.append(proj)
+        if isinstance(updated_subquery_node, str):
+            try:
+                updated_subquery_node = parse_one(updated_subquery_node)
+            except Exception:
+                return outer_ast.sql()
 
-    if not new_expressions:
-        raise ValueError("Cannot remove all columns from SELECT")
+        original_subquery.replace(updated_subquery_node)
 
-    select.set("expressions", new_expressions)
-    return expression.sql()
+        return outer_ast.sql()
 
-def replace_subquery_in_query(original_sql: str, updated_subquery_node, dialect: str = 'spark') -> str:
-    outer_ast = parse_one(original_sql, dialect=dialect)
-    
-    original_subquery = outer_ast.find(exp.Subquery)
-    if not original_subquery:
-        raise ValueError("No subquery found in original SQL")
+    except Exception:
+        return outer_ast.sql()
 
-    original_subquery.replace(updated_subquery_node)
 
-    return outer_ast.sql()
+def remove_unused_joins(sql: str) -> str:
+    if not sql or not isinstance(sql, str):
+        raise ValueError("Invalid SQL input")
 
-def remove_unused_joins(sql: str):
-    return eliminate_joins(parse_one(sql))
+    try:
+        ast = parse_one(sql)
+    except Exception:
+        return sql
+
+    try:
+        ast = eliminate_joins(ast)
+        return ast.sql()
+    except Exception:
+        return sql
