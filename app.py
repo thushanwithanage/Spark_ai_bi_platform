@@ -31,7 +31,7 @@ if run_button and user_question:
 
     user_context = {
         "user_id": "u123",
-        "role": "analyst"
+        "role": "business"
     }
 
     try:
