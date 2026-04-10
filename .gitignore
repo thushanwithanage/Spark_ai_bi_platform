@@ -8,3 +8,4 @@ commands.py
 test.py
 
 **/__pycache__/
+**/__init__.py

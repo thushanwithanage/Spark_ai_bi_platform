@@ -151,7 +151,6 @@ def replace_subquery_in_query(original_sql: str, updated_subquery_node: Union[st
     except Exception:
         return outer_ast.sql()
 
-
 def remove_unused_joins(sql: str) -> str:
     if not sql or not isinstance(sql, str):
         raise ValueError("Invalid SQL input")

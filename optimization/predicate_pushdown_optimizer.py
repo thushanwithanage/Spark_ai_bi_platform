@@ -12,9 +12,9 @@ def apply_predicate_pushdown(sql: str) -> str:
     try:
         optimized_ast  = pushdown_predicates(ast)
     except Exception:
-        return ast
+        return str(ast)
     try:
-        return str(optimized_ast )
+        return str(optimized_ast)
     except Exception as e:
-        raise RuntimeError(f"Failed to convert ATS to string {str(e)}") 
+        raise RuntimeError(f"Failed to convert AST to string {str(e)}") 
     

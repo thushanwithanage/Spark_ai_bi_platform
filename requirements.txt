@@ -3,3 +3,4 @@ pyspark
 pandas
 sqlglot
 openai
+pytest
