@@ -9,3 +9,5 @@ test.py
 
 **/__pycache__/
 **/__init__.py
+
+.coverage
